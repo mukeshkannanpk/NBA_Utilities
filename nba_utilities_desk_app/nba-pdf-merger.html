@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger</title>
+    <script>
+    window.isDesktopMode = true;
+    window.pdfBridge = null;
+    window.bridgeReady = false;
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            flex-shrink: 0;
+            text-align: center;
+            padding: 24px 20px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        #alertContainer {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: all;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .alert::before {
+            content: '';
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(102, 187, 106, 0.95) 100%);
+            border-left: 4px solid #4caf50;
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.95) 0%, rgba(211, 47, 47, 0.95) 100%);
+            border-left: 4px solid #f44336;
+        }
+
+        .alert-error::before {
+            content: '✕';
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.95) 0%, rgba(251, 192, 45, 0.95) 100%);
+            border-left: 4px solid #ff9800;
+        }
+
+        .alert-warning::before {
+            content: '⚠';
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.95) 0%, rgba(3, 169, 244, 0.95) 100%);
+            border-left: 4px solid #2196f3;
+        }
+
+        .alert-info::before {
+            content: 'ℹ';
+        }
+
+        .alert.hiding {
+            opacity: 0;
+            transform: translateX(420px);
+        }
+
+        .main-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .main-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .main-wrapper::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .main-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.4);
+            border-radius: 5px;
+        }
+
+        .main-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .upload-zone {
+            border: 3px dashed rgba(102, 126, 234, 0.5);
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-zone.drag-over {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.2);
+        }
+
+        .upload-zone.uploading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(102, 126, 234, 0.5);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .upload-status.active {
+            display: flex;
+        }
+
+        .upload-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .upload-status-text {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-header {
+            display: grid;
+            grid-template-columns: 3fr 1.5fr 2.5fr 0.5fr 0.5fr;
+            gap: 15px;
+            padding: 15px;
+            font-weight: 600;
+            color: #667eea;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .file-item {
+            display: grid;
+            grid-template-columns: 3fr 1.5fr 2.5fr 0.5fr 0.5fr;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .badge-encrypted {
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            color: #5d4037;
+            animation: pulse 2s infinite;
+        }
+
+        .badge-ready {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+        }
+
+        .badge-owner {
+            background: linear-gradient(135deg, #2196f3, #03a9f4);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.2);
+            color: #667eea;
+        }
+
+        .merge-controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .progress-container {
+            margin-top: 25px;
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-text {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .progress-percentage {
+            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+            position: relative;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+            animation: progressShimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes progressShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .progress-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pagination span {
+            color: #e0e0e0;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .controls, .merge-controls { grid-template-columns: 1fr; }
+            .file-header, .file-item { grid-template-columns: 1fr; }
+            .main-wrapper { padding: 12px; }
+            #alertContainer { right: 10px; left: 10px; max-width: none; }
+        }
+        #filesPerPage {
+            background: linear-gradient(135deg, #613086, #401a63);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: #1d1b1f;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        #filesPerPage:hover {
+            background: linear-gradient(135deg, #3d1660, #532a7c);
+            border-color: #764ba2;
+        }
+
+        #filesPerPage:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📄 SEAMLESS MERGER</h1>
+        <p class="subtitle">PDF Merger System</p>
+    </header>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <div id="alertContainer"></div>
+
+            <div class="section">
+                <h2 class="section-title">Uploaded Files (<span id="totalFiles">0</span> Total, <span id="showingFiles">0</span> Showing)</h2>
+                
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📤</div>
+                    <h3 style="color: #ffffff; font-weight: 600;">Drag and drop your PDF files here</h3>
+                    <p style="color: #b0b0b0; margin-top: 10px;">or click to browse</p>
+                    <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
+                    
+                    <div class="upload-status" id="uploadStatus">
+                        <div class="upload-spinner"></div>
+                        <div class="upload-status-text" id="uploadStatusText">Processing files...</div>
+                    </div>
+                </div>
+
+                <div class="controls" style="margin-top: 20px;">
+                    <input type="text" id="searchInput" placeholder="🔍 Search by filename...">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showEncryptedOnly">
+                        <label for="showEncryptedOnly">🔒 Show Encrypted Files Only</label>
+                    </div>
+                    <select id="filesPerPage" style="border-radius: 20px;">
+                        <option value="5">5 per page</option>
+                        <option value="10" selected>10 per page</option>
+                        <option value="25">25 per page</option>
+                        <option value="50">50 per page</option>
+                    </select>
+                </div>
+
+                <div class="file-list" id="fileList">
+                    <div class="file-header">
+                        <div>File Name</div>
+                        <div>Size</div>
+                        <div>Encryption Status</div>
+                        <div>View</div>
+                        <div>Remove</div>
+                    </div>
+                    <div id="fileItems"></div>
+                </div>
+
+                <div class="pagination" id="pagination" style="display: none;">
+                    <button class="btn btn-secondary" id="prevPage">◀ Previous</button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button class="btn btn-secondary" id="nextPage">Next ▶</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">Merge Files</h2>
+                
+                <div class="merge-controls">
+                    <input type="text" id="outputFilename" placeholder="Output filename..." value="merged.pdf">
+                    <button class="btn btn-primary" id="mergeBtn">🚀 Merge All Files</button>
+                    <button class="btn btn-secondary" id="skipEncryptedBtn">⏭️ Skip Encrypted</button>
+                </div>
+
+                <button class="btn btn-danger" id="clearAllBtn" style="width: 100%; margin-top: 15px;">
+                    🗑️ Clear All Files
+                </button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-header">
+                        <div class="status-text" id="statusText">Ready to merge...</div>
+                        <div class="progress-percentage" id="progressPercentage">0%</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-file-count" id="progressFileCount">0 / 0 files</div>
+                        <div class="progress-eta" id="progressETA">Estimating...</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="downloadBtn" style="width: 100%; margin-top: 20px; display: none;">
+                    💾 Download Merged PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        let files = [];
+        let currentPage = 1;
+        let filesPerPage = 10;
+        let isMerging = false;
+        let isUploading = false;
+        let mergeStartTime = null;
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileItems = document.getElementById('fileItems');
+        const searchInput = document.getElementById('searchInput');
+        const showEncryptedOnly = document.getElementById('showEncryptedOnly');
+        const filesPerPageSelect = document.getElementById('filesPerPage');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const skipEncryptedBtn = document.getElementById('skipEncryptedBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const progressFileCount = document.getElementById('progressFileCount');
+        const progressETA = document.getElementById('progressETA');
+        const alertContainer = document.getElementById('alertContainer');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadStatusText = document.getElementById('uploadStatusText');
+
+        // ============================================
+        // EVENT LISTENERS - UPLOAD
+        // ============================================
+        uploadZone.addEventListener('click', () => {
+            if (!isUploading) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!isUploading) uploadZone.classList.add('drag-over');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            if (!isUploading) {
+                const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+                handleFiles(droppedFiles);
+            }
+        });
+
+        // ============================================
+        // EVENT LISTENERS - CONTROLS
+        // ============================================
+        searchInput.addEventListener('input', renderFileList);
+        showEncryptedOnly.addEventListener('change', renderFileList);
+        filesPerPageSelect.addEventListener('change', (e) => {
+            filesPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            renderFileList();
+        });
+
+        mergeBtn.addEventListener('click', () => startDesktopMerge(false));
+        skipEncryptedBtn.addEventListener('click', () => startDesktopMerge(true));
+        downloadBtn.addEventListener('click', downloadMergedPdf);
+        clearAllBtn.addEventListener('click', clearAllFiles);
+
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderFileList();
+            }
+        });
+        
+        document.getElementById('nextPage').addEventListener('click', () => {
+            const filteredFiles = getFilteredFiles();
+            const totalPages = Math.ceil(filteredFiles.length / filesPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderFileList();
+            }
+        });
+
+        // ============================================
+        // FILE HANDLING
+        // ============================================
+        function handleFileSelect(e) {
+            const selectedFiles = Array.from(e.target.files);
+            handleFiles(selectedFiles);
+            e.target.value = '';
+        }
+
+        async function handleFiles(newFiles) {
+            if (isUploading) return;
+            
+            isUploading = true;
+            uploadZone.classList.add('uploading');
+            uploadStatus.classList.add('active');
+            
+            let addedCount = 0;
+            const totalFiles = newFiles.length;
+            
+            for (let i = 0; i < totalFiles; i++) {
+                const file = newFiles[i];
+                uploadStatusText.textContent = `Processing ${i + 1} of ${totalFiles}: ${file.name}`;
+                
+                if (!files.find(f => f.name === file.name && f.size === file.size)) {
+                    let encryptionInfo = { isEncrypted: false, type: 'none', error: 'Bridge not ready' };
+                    
+                    if (window.bridgeReady && window.pdfBridge) {
+                        try {
+                            // --- OPTIMIZATION ---
+                            // Encode file to Base64 ONCE here
+                            const base64Data = await fileToBase64(file);
+                            const fileData = {
+                                name: file.name,
+                                base64Data: base64Data // Send for encryption check
+                            };
+                            
+                            const resultJson = await window.pdfBridge.checkEncryption(JSON.stringify(fileData));
+                            
+                            if (resultJson) {
+                                encryptionInfo = JSON.parse(resultJson);
+                            } else {
+                                console.warn(`[WARN] Encryption check returned empty for ${file.name}`);
+                                encryptionInfo = { isEncrypted: false, type: 'none', error: 'Empty bridge response' };
+                            }
+                            console.log(`[ENCRYPT] ${file.name}: ${JSON.stringify(encryptionInfo)}`);
+                            
+                            // Store file data in the global state
+                            files.push({
+                                id: Date.now() + Math.random(),
+                                name: file.name,
+                                size: file.size,
+                                base64Data: base64Data, // Store the Base64 data
+                                // file: file, // No longer need to store the File object
+                                isEncrypted: encryptionInfo.isEncrypted,
+                                encryptionType: encryptionInfo.type,
+                                password: ''
+                            });
+                            addedCount++;
+
+                        } catch (e) {
+                            console.error('[ERROR] Encryption check or file read failed:', e);
+                            showAlert(`⚠️ Could not process ${file.name}: ${e.message}`, 'warning');
+                        }
+                    } else {
+                         console.warn(`[WARN] Bridge not ready, cannot check encryption for ${file.name}`);
+                         // Add file anyway, but as non-encrypted
+                         const base64Data = await fileToBase64(file); // Still need to encode
+                         files.push({
+                            id: Date.now() + Math.random(),
+                            name: file.name,
+                            size: file.size,
+                            base64Data: base64Data,
+                            isEncrypted: false,
+                            encryptionType: 'none',
+                            password: ''
+                        });
+                        addedCount++;
+                    }
+                }
+                
+                // Short delay to allow UI to update
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            
+            setTimeout(() => {
+                uploadZone.classList.remove('uploading');
+                uploadStatus.classList.remove('active');
+                isUploading = false;
+                
+                if (addedCount > 0) {
+                    showAlert(`✅ Added ${addedCount} new file(s).`, 'success');
+                    renderFileList();
+                } else {
+                    showAlert(`ℹ️ All files already added.`, 'info');
+                }
+            }, 500);
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    resolve(reader.result); // This is a Data URL (e.g., "data:application/pdf;base64,...")
+                };
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function getFilteredFiles() {
+            const query = searchInput.value.toLowerCase();
+            const showEncrypted = showEncryptedOnly.checked;
+            
+            return files.filter(file => {
+                const nameMatch = !query || file.name.toLowerCase().includes(query);
+                const encryptedMatch = !showEncrypted || file.isEncrypted;
+                return nameMatch && encryptedMatch;
+            });
+        }
+
+        function renderFileList() {
+            const filtered = getFilteredFiles();
+            const totalPages = Math.ceil(filtered.length / filesPerPage);
+            
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+            
+            const startIdx = (currentPage - 1) * filesPerPage;
+            const endIdx = startIdx + filesPerPage;
+            const paginated = filtered.slice(startIdx, endIdx);
+            
+            document.getElementById('totalFiles').textContent = files.length;
+            document.getElementById('showingFiles').textContent = filtered.length;
+            
+            fileItems.innerHTML = '';
+            
+            if (paginated.length === 0) {
+                fileItems.innerHTML = '<div style="text-align: center; padding: 40px; color: #b0b0b0; font-size: 1.1rem;">No files to display</div>';
+            } else {
+                paginated.forEach(file => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    
+                    let statusBadge = '';
+                    if (file.isEncrypted) { // This is only true for 'user_password'
+                        statusBadge = '<div class="badge badge-encrypted">🔒 PASSWORD PROTECTED</div>';
+                    } else if (file.encryptionType === 'owner_only') {
+                        statusBadge = '<div class="badge badge-owner">🔓 OWNER PROTECTED</div>';
+                    } else {
+                        statusBadge = '<div class="badge badge-ready">✓ READY TO MERGE</div>';
+                    }
+                    
+                    item.innerHTML = `
+                        <div><strong>${file.name}</strong></div>
+                        <div>${(file.size / 1024).toFixed(1)} KB</div>
+                        <div>
+                            ${statusBadge}
+                            ${file.isEncrypted ? `
+                                <input type="password" 
+                                       placeholder="Enter password..." 
+                                       id="pass_${file.id}"
+                                       value="${file.password}"
+                                       style="width: 100%; margin-top: 8px; padding: 8px; border-radius: 5px; border: none;">
+                            ` : ''}
+                        </div>
+                        <div>
+                            <button class="btn-icon" onclick="viewPdf('${file.id}')" title="View PDF">👁️</button>
+                        </div>
+                        <div>
+                            <button class="btn-icon" onclick="removeFile('${file.id}')" title="Remove">🗑️</button>
+                        </div>
+                    `;
+                    fileItems.appendChild(item);
+                    
+                    if (file.isEncrypted) {
+                        const passInput = document.getElementById(`pass_${file.id}`);
+                        if (passInput) {
+                            passInput.addEventListener('input', (e) => {
+                                file.password = e.target.value;
+                            });
+                        }
+                    }
+                });
+            }
+            
+            const pagination = document.getElementById('pagination');
+            if (totalPages > 1) {
+                pagination.style.display = 'flex';
+                document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = currentPage === totalPages;
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+
+        function removeFile(id) {
+            const file = files.find(f => String(f.id) === String(id));
+            if (!file) return;
+            
+            files = files.filter(f => String(f.id) !== String(id));
+            showAlert(`🗑️ Removed file: ${file.name}`, 'info');
+            renderFileList();
+        }
+
+        async function viewPdf(id) {
+            const file = files.find(f => String(f.id) === String(id));
+            if (!file) {
+                showAlert('❌ File not found', 'error');
+                return;
+            }
+
+            if (window.bridgeReady && window.pdfBridge) {
+                try {
+                    // --- OPTIMIZATION ---
+                    // Use the stored Base64 data. No need to read file again.
+                    const fileData = {
+                        name: file.name,
+                        base64Data: file.base64Data
+                    };
+                    
+                    window.pdfBridge.viewPDF(JSON.stringify(fileData));
+                    showAlert(`👁️ Opening ${file.name}...`, 'info');
+                } catch (e) {
+                    showAlert(`❌ Failed to view PDF: ${e.message}`, 'error');
+                }
+            } else {
+                showAlert('❌ Bridge not ready', 'error');
+            }
+        }
+
+        function clearAllFiles() {
+            if (files.length === 0) {
+                showAlert('ℹ️ No files to clear', 'info');
+                return;
+            }
+            
+            const count = files.length;
+            files = [];
+            renderFileList();
+            
+            downloadBtn.style.display = 'none';
+            progressContainer.classList.remove('active');
+            
+            showAlert(`🗑️ Cleared ${count} file(s)`, 'success');
+        }
+
+        // ============================================
+        // DESKTOP MERGE
+        // ============================================
+        async function startDesktopMerge(skipEncrypted) {
+            if (!window.pdfBridge || !window.bridgeReady) {
+                showAlert('❌ ERROR: Bridge not ready', 'error');
+                return;
+            }
+
+            if (files.length === 0) {
+                showAlert('⚠️ No files to merge!', 'warning');
+                return;
+            }
+
+            if (!skipEncrypted) {
+                const missingPasswords = files.filter(f => f.isEncrypted && !f.password);
+                if (missingPasswords.length > 0) {
+                    showAlert(`❌ Please provide passwords for: ${missingPasswords.map(f => f.name).join(', ')}`, 'error');
+                    return;
+                }
+            }
+
+            if (isMerging) {
+                showAlert('⚠️ Merge already in progress!', 'warning');
+                return;
+            }
+
+            isMerging = true;
+            mergeStartTime = Date.now();
+            mergeBtn.disabled = true;
+            skipEncryptedBtn.disabled = true;
+            clearAllBtn.disabled = true;
+            downloadBtn.style.display = 'none';
+            progressContainer.classList.add('active');
+            progressFill.style.width = '0%';
+            progressPercentage.textContent = '0%';
+            statusText.textContent = 'Preparing files...';
+            progressFileCount.textContent = `0 / ${files.length} files`;
+            progressETA.textContent = 'Estimating...';
+
+            try {
+                console.log('[MERGE] Preparing', files.length, 'files for merge');
+                
+                // --- OPTIMIZATION ---
+                // We no longer need to encode files here. Just map the data.
+                const filesData = files.map(file => {
+                    return {
+                        name: file.name,
+                        size: file.size,
+                        isEncrypted: file.isEncrypted,
+                        password: file.password || '',
+                        base64Data: file.base64Data // Use stored data
+                    };
+                });
+                
+                // Show a brief "preparing" state
+                statusText.textContent = 'Sending to backend...';
+                progressFill.style.width = '5%';
+                progressPercentage.textContent = '5%';
+                await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+
+                const outputFilename = document.getElementById('outputFilename').value || 'merged.pdf';
+
+                console.log('[MERGE] Starting merge with', filesData.length, 'encoded files');
+                window.pdfBridge.startMerge(
+                    JSON.stringify(filesData),
+                    outputFilename,
+                    skipEncrypted
+                );
+            } catch (e) {
+                console.error('[ERROR] Merge preparation failed:', e);
+                showAlert('❌ Merge failed: ' + e.message, 'error');
+                isMerging = false;
+                mergeBtn.disabled = false;
+                skipEncryptedBtn.disabled = false;
+                clearAllBtn.disabled = false;
+                progressContainer.classList.remove('active');
+            }
+        }
+
+        function downloadMergedPdf() {
+            if (window.pdfBridge && window.bridgeReady) {
+                window.pdfBridge.downloadMerged();
+            } else {
+                showAlert('❌ Bridge not ready', 'error');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.classList.add('hiding');
+                setTimeout(() => alert.remove(), 300);
+            }, 4000);
+        }
+
+        // ============================================
+        // DESKTOP BRIDGE CALLBACKS
+        // ============================================
+        window.onBridgeReady = function() {
+            window.bridgeReady = true;
+            console.log('[BRIDGE] PDF Merger bridge connected');
+            // --- UI TWEAK ---
+            // Changed alert from "Desktop mode activated"
+            //showAlert('✅ Ready to merge files', 'success');
+        };
+
+        window.updateMergeProgress = function(current, total, message) {
+            // Start progress from 5% (after "preparing")
+            const baseProgress = 5;
+            const mergeProgress = 90; // 5% to 95%
+            const progress = baseProgress + (current / total) * mergeProgress;
+            
+            progressFill.style.width = progress + '%';
+            progressPercentage.textContent = Math.round(progress) + '%';
+            statusText.textContent = message;
+            progressFileCount.textContent = `${current} / ${total} files`;
+            
+            if (!mergeStartTime) mergeStartTime = Date.now();
+            const elapsed = (Date.now() - mergeStartTime) / 1000;
+            
+            if (current > 0) {
+                const avgTimePerFile = elapsed / current;
+                const remainingFiles = total - current;
+                const etaSeconds = Math.round(avgTimePerFile * remainingFiles);
+                progressETA.textContent = etaSeconds > 0 ? `ETA: ${etaSeconds}s` : 'Finalizing...';
+            }
+            
+            console.log(`[PROGRESS] ${current}/${total}: ${message}`);
+        };
+
+        window.handleMergeComplete = function(resultJson) {
+            try {
+                const result = JSON.parse(resultJson);
+                console.log('[COMPLETE]', result);
+
+                isMerging = false;
+                mergeBtn.disabled = false;
+                skipEncryptedBtn.disabled = false;
+                clearAllBtn.disabled = false;
+                progressFill.style.width = '100%';
+                progressPercentage.textContent = '100%';
+                progressETA.textContent = 'Complete!';
+
+                const message = `✅ Merged ${result.successful}/${result.successful + result.failed} files (${result.totalPages} pages total)`;
+                statusText.textContent = message;
+                progressFileCount.textContent = `${files.length} / ${files.length} files`;
+                showAlert(message, 'success');
+
+                downloadBtn.style.display = 'block';
+                downloadBtn.textContent = '💾 Download Merged PDF (' + (result.fileSize / 1024 / 1024).toFixed(2) + ' MB)';
+
+                if (result.failed > 0) {
+                    const errors = result.errors.slice(0, 3).join(' | ');
+                    showAlert(`⚠️ ${result.failed} file(s) failed: ${errors}`, 'warning');
+                }
+
+            } catch (e) {
+                console.error('[ERROR] Parse complete result:', e);
+                showAlert('❌ Error processing merge result', 'error');
+                isMerging = false;
+                mergeBtn.disabled = false;
+                skipEncryptedBtn.disabled = false;
+                clearAllBtn.disabled = false;
+            }
+        };
+
+        window.handleMergeError = function(errorMsg) {
+            console.error('[ERROR]', errorMsg);
+            
+            isMerging = false;
+            mergeBtn.disabled = false;
+            skipEncryptedBtn.disabled = false;
+            clearAllBtn.disabled = false;
+            progressFill.style.width = '0%';
+            progressPercentage.textContent = '0%';
+            statusText.textContent = 'Merge failed';
+            progressContainer.classList.remove('active');
+            
+            showAlert('❌ Merge Error: ' + errorMsg, 'error');
+        };
+
+        // Make functions globally accessible for inline 'onclick'
+        window.removeFile = removeFile;
+        window.viewPdf = viewPdf;
+
+        // Initial render
+        renderFileList();
+    </script>
+</body>
+</html>

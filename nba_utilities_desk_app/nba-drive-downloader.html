@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Drive Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header - Fixed */
+        header {
+            flex-shrink: 0;
+            text-align: center;
+            padding: 24px 20px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .refresh-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(102, 126, 234, 0.4);
+            color: #667eea;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Alert Container - Fixed */
+        #alertContainer {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        /* Main Content - Scrollable */
+        .main-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .main-wrapper::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .main-wrapper::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .main-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.4);
+            border-radius: 5px;
+        }
+
+        .main-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.6);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 18px;
+            color: #667eea;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        /* Flip Card Container */
+        .flip-container {
+            perspective: 1000px;
+            min-height: 460px;
+        }
+
+        .flip-card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 460px;
+            transition: transform 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flip-face {
+            position: absolute;
+            width: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .flip-face-front {
+            transform: rotateY(0deg);
+        }
+
+        .flip-face-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Preset Options */
+        .preset-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .preset-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .preset-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+        /* ensure parent is positioning context for any absolute children */
+.preset-option {
+    position: relative;
+}
+
+/* hide native radio controls completely (accessible but invisible) */
+.preset-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    pointer-events: none;
+}
+
+/* visual selected state — keep using + selector because input is immediately before label */
+.preset-option input[type="radio"]:checked + .preset-label,
+.preset-option.active .preset-label {  /* JS fallback class below */
+    background: rgba(102, 126, 234, 0.2) !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3) !important;
+    transform: scale(1.02) !important;
+}
+
+/* icon change when selected */
+.preset-option input[type="radio"]:checked + .preset-label .preset-icon,
+.preset-option.active .preset-label .preset-icon {
+    background: rgba(102, 126, 234, 0.3) !important;
+    transform: rotate(5deg) scale(1.1) !important;
+}
+
+        .preset-option input[type="radio"]:checked + .preset-label {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+            transform: scale(1.02);
+        }
+
+        .preset-label:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(102, 126, 234, 0.4);
+            transform: translateX(4px);
+        }
+
+        .preset-icon {
+            font-size: 1.6rem;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.15);
+            border-radius: 8px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .preset-option input[type="radio"]:checked + .preset-label .preset-icon {
+            background: rgba(102, 126, 234, 0.3);
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .preset-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .preset-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .preset-desc {
+            font-size: 0.8rem;
+            color: #999;
+            line-height: 1.4;
+        }
+
+        /* Sliders */
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .slider-value {
+            color: #667eea;
+            font-weight: 700;
+            background: rgba(102, 126, 234, 0.2);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-width: 55px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.7);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Flip Toggle Button */
+        .flip-toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        .flip-toggle-btn {
+            background: rgba(102, 126, 234, 0.15);
+            border: 2px solid rgba(102, 126, 234, 0.4);
+            color: #667eea;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flip-toggle-btn:hover {
+            background: rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .btn:hover:not(:disabled)::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #3a3a4a;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .status-error {
+            background: linear-gradient(135deg, #f44336, #e53935);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #2196f3, #42a5f5);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.9; }
+        }
+
+        /* Form Elements */
+        input[type="text"], input[type="search"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="search"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Column Selection */
+        .checkbox-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .select-all-btn {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .select-all-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: scale(1.05);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .checkbox-group::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .checkbox-group::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .checkbox-group::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.5);
+            border-radius: 3px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(3px);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+            margin: 0;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            flex: 1;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* Progress */
+        .progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .status-text {
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        /* Results */
+        .results-area {
+            margin-top: 16px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            display: none;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .results-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .result-card {
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .result-card.success {
+            background: rgba(76, 175, 80, 0.15);
+            border: 2px solid #4caf50;
+        }
+
+        .result-card.failed {
+            background: rgba(244, 67, 54, 0.15);
+            border: 2px solid #f44336;
+        }
+
+        .result-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .result-label {
+            font-size: 0.95rem;
+            color: #b0b0b0;
+            font-weight: 500;
+        }
+
+        .error-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(244, 67, 54, 0.1);
+            border-left: 3px solid #f44336;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        .error-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            color: #ff8a80;
+        }
+
+        .error-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            animation: slideInRight 0.4s ease;
+            min-width: 300px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-success {
+            background: rgba(76, 175, 80, 0.25);
+            border-left: 4px solid #4caf50;
+            color: #4caf50;
+        }
+
+        .alert-error {
+            background: rgba(244, 67, 54, 0.25);
+            border-left: 4px solid #f44336;
+            color: #f44336;
+        }
+
+        .alert-warning {
+            background: rgba(255, 152, 0, 0.25);
+            border-left: 4px solid #ff9800;
+            color: #ff9800;
+        }
+
+        .alert-info {
+            background: rgba(33, 150, 243, 0.25);
+            border-left: 4px solid #2196f3;
+            color: #2196f3;
+        }
+
+        .file-info {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .file-info strong {
+            color: #667eea;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .refresh-btn {
+                position: static;
+                margin: 16px auto 0;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            #alertContainer {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .btn-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-summary {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .main-wrapper {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Fixed Header -->
+    <header>
+        <h1>🔗Glink Extract</h1>
+        <p class="subtitle">Glink Extraction System</p>
+        <button class="refresh-btn" id="refreshBtn">
+            <span>🔄</span>
+            <span>Reset</span>
+        </button>
+    </header>
+
+    <!-- Fixed Alert Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Scrollable Main Content -->
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="main-layout">
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <!-- Authentication -->
+                    <div class="section">
+                        <h3 class="section-title">🔐 Authentication</h3>
+                        <button class="btn" id="uploadCredsBtn">📁 Upload Credentials</button>
+                        <div id="authStatus" class="status-badge status-pending" style="display: block;">🔄 Checking...</div>
+                    </div>
+
+                    <!-- Flip Section: Preset & Fine Tune -->
+                    <div class="section">
+                        <div class="flip-container">
+                            <div class="flip-card" id="flipCard">
+                                <!-- Front: Preset Mode -->
+                                <div class="flip-face flip-face-front">
+                                    <h3 class="section-title">⚙️ Preset Mode</h3>
+                                    <div class="preset-options">
+                                        <label class="preset-option">
+                                            <input type="radio" name="preset" value="balanced" checked>
+                                            <div class="preset-label">
+                                                <div class="preset-icon">⚖️</div>
+                                                <div class="preset-info">
+                                                    <div class="preset-name">Balanced Mode</div>
+                                                    <div class="preset-desc">Balanced settings for most use cases</div>
+                                                </div>
+                                            </div>
+                                        </label>
+
+                                        <label class="preset-option">
+                                            <input type="radio" name="preset" value="speed">
+                                            <div class="preset-label">
+                                                <div class="preset-icon">⚡</div>
+                                                <div class="preset-info">
+                                                    <div class="preset-name">Speed Mode</div>
+                                                    <div class="preset-desc">Maximum speed with higher chunk size</div>
+                                                </div>
+                                            </div>
+                                        </label>
+
+                                        <label class="preset-option">
+                                            <input type="radio" name="preset" value="safe">
+                                            <div class="preset-label">
+                                                <div class="preset-icon">🛡️</div>
+                                                <div class="preset-info">
+                                                    <div class="preset-name">Safe Mode</div>
+                                                    <div class="preset-desc">Conservative settings with more retries</div>
+                                                </div>
+                                            </div>
+                                        </label>
+
+                                        <label class="preset-option">
+                                            <input type="radio" name="preset" value="team">
+                                            <div class="preset-label">
+                                                <div class="preset-icon">👥</div>
+                                                <div class="preset-info">
+                                                    <div class="preset-name">Team Mode</div>
+                                                    <div class="preset-desc">Optimized for shared team usage</div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Back: Fine Tune -->
+                                <div class="flip-face flip-face-back">
+                                    <h3 class="section-title">🔧 Fine-Tune</h3>
+                                    
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Threads</span>
+                                            <span class="slider-value" id="threadsValue">4</span>
+                                        </div>
+                                        <input type="range" id="threadsSlider" min="1" max="10" value="4">
+                                    </div>
+
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Chunk Size</span>
+                                            <span class="slider-value" id="chunkValue">8 MB</span>
+                                        </div>
+                                        <input type="range" id="chunkSlider" min="1" max="32" value="8">
+                                    </div>
+
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Retries</span>
+                                            <span class="slider-value" id="retriesValue">3</span>
+                                        </div>
+                                        <input type="range" id="retriesSlider" min="1" max="5" value="3">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flip-toggle-container">
+                            <button class="flip-toggle-btn" id="flipToggleBtn">
+                                <span id="flipIcon">🔧</span>
+                                <span id="flipText">Fine Tune</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="content">
+                    <!-- File Upload -->
+                    <div class="section">
+                        <h3 class="section-title">📂 Upload Data File</h3>
+                        <button class="btn" id="uploadFileBtn">📄 Upload Excel/CSV with 'Glink' column</button>
+                        <div id="fileStatus" class="file-info" style="display: none;"></div>
+                    </div>
+
+                    <!-- Column Selection -->
+                    <div class="section" id="columnSection" style="display: none;">
+                        <div class="checkbox-header">
+                            <h3 class="section-title" style="margin: 0;">🧩 Select Columns (<span id="selectedCount">0</span> selected)</h3>
+                            <button class="select-all-btn" id="selectAllBtn">Select All</button>
+                        </div>
+                        <input type="search" id="columnSearch" placeholder="🔍 Search columns...">
+                        <div class="checkbox-group" id="columnCheckboxes"></div>
+                    </div>
+
+                    <!-- Download Controls -->
+                    <div class="section">
+                        <h3 class="section-title">🚀 Download Control</h3>
+                        <div class="btn-grid">
+                            <button class="btn" id="startDownloadBtn" disabled>🚀 Start Download</button>
+                            <button class="btn btn-danger" id="cancelDownloadBtn" disabled>⛔ Cancel</button>
+                        </div>
+
+                        <div class="progress-container" id="progressContainer">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill">0%</div>
+                            </div>
+                            <div class="status-text" id="statusText">Ready to start...</div>
+                        </div>
+
+                        <div class="results-area" id="resultsArea">
+                            <div class="results-summary">
+                                <div class="result-card success">
+                                    <div class="result-number" id="successCount">0</div>
+                                    <div class="result-label">✅ Successful</div>
+                                </div>
+                                <div class="result-card failed">
+                                    <div class="result-number" id="failedCount">0</div>
+                                    <div class="result-label">❌ Failed</div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-secondary" id="downloadZipBtn" style="margin-bottom: 12px;">💾 Save ZIP Again</button>
+
+                            <div id="errorListContainer" style="display: none;">
+                                <h4 style="color: #f44336; margin-bottom: 10px; font-size: 1rem;">Failed Downloads:</h4>
+                                <div class="error-list" id="errorList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let dataFrame = null;
+        let selectedColumns = [];
+        let allColumns = [];
+        let isAuthenticated = false;
+        let isDownloading = false;
+        let isFlipped = false;
+
+        // Preset configurations
+        const presets = {
+            balanced: { threads: 4, chunk: 8, retries: 3 },
+            speed: { threads: 8, chunk: 16, retries: 2 },
+            safe: { threads: 2, chunk: 4, retries: 5 },
+            team: { threads: 3, chunk: 8, retries: 2 }
+        };
+
+        // DOM Elements
+        const uploadCredsBtn = document.getElementById('uploadCredsBtn');
+        const uploadFileBtn = document.getElementById('uploadFileBtn');
+        const presetRadios = document.querySelectorAll('input[name="preset"]');
+        const threadsSlider = document.getElementById('threadsSlider');
+        const chunkSlider = document.getElementById('chunkSlider');
+        const retriesSlider = document.getElementById('retriesSlider');
+        const startDownloadBtn = document.getElementById('startDownloadBtn');
+        const cancelDownloadBtn = document.getElementById('cancelDownloadBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const authStatus = document.getElementById('authStatus');
+        const fileStatus = document.getElementById('fileStatus');
+        const columnSection = document.getElementById('columnSection');
+        const columnCheckboxes = document.getElementById('columnCheckboxes');
+        const columnSearch = document.getElementById('columnSearch');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const resultsArea = document.getElementById('resultsArea');
+        const alertContainer = document.getElementById('alertContainer');
+        const flipCard = document.getElementById('flipCard');
+        const flipToggleBtn = document.getElementById('flipToggleBtn');
+        const flipIcon = document.getElementById('flipIcon');
+        const flipText = document.getElementById('flipText');
+
+        // Initialize
+        window.addEventListener('load', () => {
+            console.log('[APP] Initialized');
+            applyPreset();
+        });
+
+        // Flip Toggle
+        flipToggleBtn.addEventListener('click', () => {
+            isFlipped = !isFlipped;
+            flipCard.classList.toggle('flipped');
+            
+            if (isFlipped) {
+                flipIcon.textContent = '⚙️';
+                flipText.textContent = 'Back to Presets';
+            } else {
+                flipIcon.textContent = '🔧';
+                flipText.textContent = 'Fine Tune';
+            }
+        });
+
+        // Event Listeners
+        uploadCredsBtn.addEventListener('click', () => {
+            if (window.driveBridge) {
+                window.driveBridge.uploadCredentials();
+            } else {
+                showAlert(' Bridge not connected. Please wait...', 'error');
+            }
+        });
+
+        uploadFileBtn.addEventListener('click', () => {
+            if (window.driveBridge) {
+                window.driveBridge.uploadDataFile();
+            } else {
+                showAlert(' Bridge not connected. Please wait...', 'error');
+            }
+        });
+
+        presetRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    presetRadios.forEach(r => {
+                        if (r !== e.target) r.checked = false;
+                    });
+                    applyPreset();
+                }
+            });
+        });
+
+        // keep visual state robust in Qt WebEngine by syncing an 'active' class
+function syncPresetActiveClasses() {
+    document.querySelectorAll('.preset-option').forEach(opt => opt.classList.remove('active'));
+    const checked = document.querySelector('input[name="preset"]:checked');
+    if (checked) {
+        const parent = checked.closest('.preset-option');
+        if (parent) parent.classList.add('active');
+    }
+}
+
+// run on load and whenever a radio changes
+window.addEventListener('load', syncPresetActiveClasses);
+presetRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+        // small deferral helps with Qt synthetic event timing
+        setTimeout(syncPresetActiveClasses, 10);
+    });
+    // also allow clicking the label/card area to trigger the same sync
+    const opt = radio.closest('.preset-option');
+    if (opt) opt.addEventListener('click', () => setTimeout(syncPresetActiveClasses, 10));
+});
+
+
+        threadsSlider.addEventListener('input', updateSliderValues);
+        chunkSlider.addEventListener('input', updateSliderValues);
+        retriesSlider.addEventListener('input', updateSliderValues);
+        startDownloadBtn.addEventListener('click', startDownload);
+        cancelDownloadBtn.addEventListener('click', cancelDownload);
+        refreshBtn.addEventListener('click', resetApplication);
+        document.getElementById('downloadZipBtn').addEventListener('click', () => {
+            if (window.driveBridge) {
+                window.driveBridge.downloadZip();
+            }
+        });
+        columnSearch.addEventListener('input', filterColumns);
+        selectAllBtn.addEventListener('click', toggleSelectAll);
+
+        function applyPreset() {
+            const selectedPreset = document.querySelector('input[name="preset"]:checked').value;
+            const preset = presets[selectedPreset];
+            threadsSlider.value = preset.threads;
+            chunkSlider.value = preset.chunk;
+            retriesSlider.value = preset.retries;
+            updateSliderValues();
+        }
+
+        function updateSliderValues() {
+            document.getElementById('threadsValue').textContent = threadsSlider.value;
+            document.getElementById('chunkValue').textContent = chunkSlider.value + ' MB';
+            document.getElementById('retriesValue').textContent = retriesSlider.value;
+        }
+
+        function filterColumns() {
+            const query = columnSearch.value.toLowerCase();
+            const items = columnCheckboxes.querySelectorAll('.checkbox-item');
+            
+            items.forEach(item => {
+                const label = item.querySelector('label').textContent.toLowerCase();
+                item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function toggleSelectAll() {
+            const visibleCheckboxes = Array.from(columnCheckboxes.querySelectorAll('.checkbox-item'))
+                .filter(item => item.style.display !== 'none')
+                .map(item => item.querySelector('input[type="checkbox"]'));
+            
+            if (visibleCheckboxes.length === 0) return;
+            
+            const allChecked = visibleCheckboxes.every(cb => cb.checked);
+            
+            visibleCheckboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+            
+            selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            selectedColumns = [];
+            const checkboxes = columnCheckboxes.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => selectedColumns.push(cb.value));
+            document.getElementById('selectedCount').textContent = selectedColumns.length;
+            
+            startDownloadBtn.disabled = !(isAuthenticated && selectedColumns.length > 0 && dataFrame !== null);
+        }
+
+        function resetApplication() {
+            if (isDownloading) {
+                showAlert(' Cannot reset while download is in progress', 'warning');
+                return;
+            }
+
+            if (confirm('🔄 Are you sure you want to reset the application? This will clear all data except authentication.')) {
+                dataFrame = null;
+                selectedColumns = [];
+                allColumns = [];
+
+                fileStatus.style.display = 'none';
+                fileStatus.innerHTML = '';
+                columnSection.style.display = 'none';
+                columnCheckboxes.innerHTML = '';
+                columnSearch.value = '';
+                progressContainer.style.display = 'none';
+                resultsArea.style.display = 'none';
+                startDownloadBtn.disabled = true;
+                
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('progressFill').textContent = '0%';
+                document.getElementById('statusText').textContent = 'Ready to start...';
+                
+                document.querySelector('input[name="preset"][value="balanced"]').checked = true;
+                if (isFlipped) {
+                    flipCard.classList.remove('flipped');
+                    isFlipped = false;
+                    flipIcon.textContent = '🔧';
+                    flipText.textContent = 'Fine Tune';
+                }
+                applyPreset();
+
+                showAlert(' Application reset successfully', 'success');
+                console.log('[RESET] Application reset');
+            }
+        }
+
+        async function startDownload() {
+            if (!window.driveBridge) {
+                showAlert(' Bridge not ready', 'error');
+                return;
+            }
+
+            if (selectedColumns.length === 0) {
+                showAlert(' Please select at least one column', 'warning');
+                return;
+            }
+
+            const settings = {
+                threads: parseInt(threadsSlider.value),
+                chunk: parseInt(chunkSlider.value),
+                retries: parseInt(retriesSlider.value),
+                columns: selectedColumns
+            };
+
+            isDownloading = true;
+            startDownloadBtn.disabled = true;
+            cancelDownloadBtn.disabled = false;
+            uploadFileBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            resultsArea.style.display = 'none';
+            
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressFill').textContent = '0%';
+            document.getElementById('statusText').textContent = 'Initializing download...';
+
+            try {
+                const resultJson = await window.driveBridge.startDownload(JSON.stringify(settings));
+                const result = JSON.parse(resultJson);
+                if (!result.success) {
+                    resetUI();
+                }
+            } catch (e) {
+                console.error('[ERROR] Start download failed:', e);
+                showAlert('❌ Failed to start download', 'error');
+                resetUI();
+            }
+        }
+
+        function cancelDownload() {
+            if (window.driveBridge) {
+                window.driveBridge.cancelDownload();
+                showAlert('⛔ Download cancelled', 'warning');
+                resetUI();
+            }
+        }
+
+        function resetUI() {
+            isDownloading = false;
+            startDownloadBtn.disabled = !(isAuthenticated && selectedColumns.length > 0 && dataFrame !== null);
+            cancelDownloadBtn.disabled = true;
+            uploadFileBtn.disabled = false;
+        }
+
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            alert.innerHTML = `<span style="font-size: 1.2rem;">${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.3s';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        // Python Bridge Callbacks
+        window.onAuthSuccess = function() {
+            isAuthenticated = true;
+            authStatus.className = 'status-badge status-success';
+            authStatus.textContent = '✅ Authenticated';
+            authStatus.style.display = 'block';
+            uploadCredsBtn.textContent = '🔓 Re-authenticate';
+            showAlert('Successfully authenticated with Google Drive', 'success');
+            updateSelectedCount();
+        };
+
+        window.onAuthPending = function() {
+            authStatus.className = 'status-badge status-pending';
+            authStatus.textContent = '🔄 Authenticating...';
+            authStatus.style.display = 'block';
+        };
+
+        window.onAuthError = function() {
+            isAuthenticated = false;
+            authStatus.className = 'status-badge status-error';
+            authStatus.textContent = '❌ Not Authenticated';
+            authStatus.style.display = 'block';
+            uploadCredsBtn.textContent = '📁 Upload Credentials';
+        };
+
+        window.onFileLoaded = function(data) {
+            try {
+                dataFrame = JSON.parse(data);
+                
+                fileStatus.innerHTML = `
+                    <strong>✅ File Loaded Successfully</strong><br>
+                    📊 <strong>${dataFrame.rowCount}</strong> records found<br>
+                    📄 File: ${dataFrame.fileName || 'Unknown'}<br>
+                    <small style="color: #999;">Available columns: ${dataFrame.columns.join(', ')}</small>
+                `;
+                fileStatus.style.display = 'block';
+                
+                columnSection.style.display = 'block';
+                columnCheckboxes.innerHTML = '';
+                allColumns = dataFrame.columns;
+                
+                dataFrame.columns.forEach(col => {
+                    const div = document.createElement('div');
+                    div.className = 'checkbox-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'col_' + col;
+                    checkbox.value = col;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = 'col_' + col;
+                    label.textContent = col;
+                    
+                    checkbox.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        updateSelectedCount();
+                    });
+                    
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    
+                    div.addEventListener('click', (e) => {
+                        if (e.target !== checkbox && e.target !== label) {
+                            checkbox.checked = !checkbox.checked;
+                            updateSelectedCount();
+                        }
+                    });
+                    
+                    columnCheckboxes.appendChild(div);
+                });
+                
+                showAlert(`File loaded: ${dataFrame.rowCount} rows`, 'success');
+                
+                setTimeout(() => {
+                    columnSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            } catch (e) {
+                console.error('[ERROR] Parsing file data:', e);
+                showAlert('Error loading file data', 'error');
+            }
+        };
+
+        window.onProgressUpdate = function(completed, total) {
+            const percent = Math.round((completed / total) * 100);
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('statusText');
+            
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+            statusText.textContent = `📥 Downloading: ${completed}/${total} files (${percent}%)`;
+        };
+
+        window.onDownloadComplete = function(data) {
+            try {
+                const results = JSON.parse(data);
+                
+                document.getElementById('successCount').textContent = results.successful;
+                document.getElementById('failedCount').textContent = results.failed;
+                
+                if (results.failed > 0 && results.errors) {
+                    const errorList = document.getElementById('errorList');
+                    errorList.innerHTML = '';
+                    results.errors.forEach(err => {
+                        const div = document.createElement('div');
+                        div.className = 'error-item';
+                        div.textContent = `Row ${err.index}: ${err.error}`;
+                        errorList.appendChild(div);
+                    });
+                    document.getElementById('errorListContainer').style.display = 'block';
+                } else {
+                    document.getElementById('errorListContainer').style.display = 'none';
+                }
+                
+                resultsArea.style.display = 'block';
+                
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressFill').textContent = '100%';
+                document.getElementById('statusText').textContent = `✅ Complete: ${results.successful} files downloaded`;
+                
+                resetUI();
+                
+                if (results.successful > 0) {
+                    showAlert(`🎉 Download complete! ${results.successful} files saved successfully`, 'success');
+                    
+                    setTimeout(() => {
+                        resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                } else {
+                    showAlert('❌ No files were downloaded successfully', 'error');
+                }
+            } catch (e) {
+                console.error('[ERROR] Parsing results:', e);
+                showAlert('Error processing results', 'error');
+            }
+        };
+
+        window.onError = function(message) {
+            showAlert(message, 'error');
+            resetUI();
+        };
+    </script>
+</body>
+</html>
