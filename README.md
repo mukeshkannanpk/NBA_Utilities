@@ -6,6 +6,7 @@ A powerful, cross-platform desktop application built to **automate NBA (Training
 <img width="1919" height="1024" alt="image" src="https://github.com/user-attachments/assets/b96a8ad9-5ab0-4482-bdb2-243cbe073cd1" />
 <img width="1918" height="1019" alt="image" src="https://github.com/user-attachments/assets/7dfe9719-8ca7-42c4-963f-bc27045a0cef" />
 
+### Installer Link : https://drive.google.com/file/d/1qYYhXnULdTK8kl1OxipddwMGzBT8UyXI/view?usp=sharing
 
 ---
 
