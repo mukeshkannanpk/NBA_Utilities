@@ -1,12 +1,10 @@
-#  📃⚡Placement cell Document Automation System  
+#  📃⚡Placement Cell Document Automation System  
 ### Automated Google Drive Downloader & Unlimited Offline PDF Merger
 
 A powerful, cross-platform desktop application built to **automate NBA (Training & Placement) documentation** by eliminating manual Google Drive downloads and offering a **free, unlimited, offline PDF merging utility**—all in one application.
 <img width="1919" height="1021" alt="image" src="https://github.com/user-attachments/assets/be3cf167-901c-48ee-8402-845447f83f9c" />
 <img width="1919" height="1024" alt="image" src="https://github.com/user-attachments/assets/b96a8ad9-5ab0-4482-bdb2-243cbe073cd1" />
 <img width="1918" height="1019" alt="image" src="https://github.com/user-attachments/assets/7dfe9719-8ca7-42c4-963f-bc27045a0cef" />
-
-### Installer Link : https://drive.google.com/file/d/1qYYhXnULdTK8kl1OxipddwMGzBT8UyXI/view?usp=sharing
 
 ---
 
@@ -25,7 +23,7 @@ A powerful, cross-platform desktop application built to **automate NBA (Training
 
 ## Overview
 
-During an internship with the **Training and Placement Cell**, our team encountered a massive bottleneck in the NBA documentation process:
+During my internship with the **Training and Placement Cell of Bannari Amman Institute of Technology**, our team encountered a massive bottleneck in the NBA documentation process:
 
 - Over **1500+ PDFs** had to be manually downloaded from Google Drive links listed in Google Sheets.
 - This required days of repeated clicking, organizing, and naming.
