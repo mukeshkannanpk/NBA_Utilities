@@ -1,4 +1,4 @@
-#  📃⚡NBA Utilities  
+#  📃⚡Placement cell Document Automation System  
 ### Automated Google Drive Downloader & Unlimited Offline PDF Merger
 
 A powerful, cross-platform desktop application built to **automate NBA (Training & Placement) documentation** by eliminating manual Google Drive downloads and offering a **free, unlimited, offline PDF merging utility**—all in one application.
