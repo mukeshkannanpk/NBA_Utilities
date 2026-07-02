@@ -1,188 +1,298 @@
-#  📃⚡Placement Cell Document Automation System  
-### A desktop automation suite that streamlines document processing for Training & Placement Cells by automating bulk Google Drive downloads and providing secure offline PDF merging.
+# 📃⚡ Placement Cell Document Automation Suite
 
-A powerful, cross-platform desktop application built to **automate NBA (Training & Placement) documentation** by eliminating manual Google Drive downloads and offering a **free, unlimited, offline PDF merging utility**—all in one application.
-<img width="1919" height="1021" alt="image" src="https://github.com/user-attachments/assets/be3cf167-901c-48ee-8402-845447f83f9c" />
-<img width="1919" height="1024" alt="image" src="https://github.com/user-attachments/assets/b96a8ad9-5ab0-4482-bdb2-243cbe073cd1" />
-<img width="1918" height="1019" alt="image" src="https://github.com/user-attachments/assets/7dfe9719-8ca7-42c4-963f-bc27045a0cef" />
+> **A production-ready desktop application that automates bulk Google Drive document retrieval and provides secure, unlimited offline PDF merging.**
+
+Built using **Python**, **PySide6**, **Qt WebEngine**, **HTML/CSS/JavaScript**, and the **Google Drive API** to eliminate repetitive documentation work inside the Training & Placement Cell.
 
 ---
 
-## Table of Contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Why This Project Matters](#why-this-project-matters)
-- [Architecture & Tech Stack](#architecture--tech-stack)
-- [Application Modules](#application-modules)
-- [Folder Structure](#folder-structure)
-- [Installation (Developer Guide)](#installation-developer-guide)
-- [Building EXE + Installer](#building-exe--installer)
-- [License](#license)
+## 📸 Application Preview
+
+<p align="center">
+<img width="100%" src="https://github.com/user-attachments/assets/be3cf167-901c-48ee-8402-845447f83f9c">
+
+<br><br>
+
+<img width="100%" src="https://github.com/user-attachments/assets/b96a8ad9-5ab0-4482-bdb2-243cbe073cd1">
+
+<br><br>
+
+<img width="100%" src="https://github.com/user-attachments/assets/7dfe9719-8ca7-42c4-963f-bc27045a0cef">
+</p>
 
 ---
 
-## Overview
+# 🚀 Project Overview
 
-During my internship with the **Training and Placement Cell of Bannari Amman Institute of Technology**, our team encountered a massive bottleneck in the NBA documentation process:
+During my internship at the **Training and Placement Cell, Bannari Amman Institute of Technology**, I observed that a significant amount of time was spent performing repetitive document management tasks.
 
-- Over **1500+ PDFs** had to be manually downloaded from Google Drive links listed in Google Sheets.
-- This required days of repeated clicking, organizing, and naming.
-- Online PDF mergers had file-size or file-count restrictions.
-- Sensitive student data couldn’t be uploaded to online tools due to privacy concerns.
+The team frequently had to:
 
-### 🎯 Solution  
-**NBA Utilities** combines two major automation tools:
+- Download **1500+ student PDFs** individually from Google Drive links stored in spreadsheets.
+- Rename and organize files manually.
+- Merge hundreds of PDFs using online services with strict upload limits.
+- Handle confidential student documents that could not be uploaded to third-party websites.
 
-1. **GLink Extractor** – Automates bulk Google Drive downloads from Google Sheet links.  
-2. **Offline PDF Merger** – Merges thousands of PDFs into one file securely on the local machine.
+These manual activities consumed several hours every placement cycle.
 
-<b>No limits. No subscriptions. No data leaks.<b>
+To solve this problem, I designed and developed a complete desktop automation solution from scratch.
 
 ---
 
-## Key Features
+# 💡 Solution
 
-### 🚀 Operational Efficiency
-- Automates fetching and downloading **1500+ PDF files** in a single click.
-- Multi-threaded parallel downloading.
-- Auto-folder creation and file organization.
+The application consists of two integrated productivity tools.
 
-### 💸 Cost Saving
-- 100% free offline PDF merging.
-- No online services or paid subscriptions needed.
+## 📥 GLink Extractor
 
-### 🔐 Security & Reliability
-- Fully offline PDF merging (protects sensitive student data).
-- Automatically detects and skips encrypted PDFs and logs them.
+Automates bulk downloading of Google Drive documents directly from Excel or CSV files.
 
-### 🖥 Modern UI
-- Built using **PySide6 + QtWebEngine**.
-- Responsive HTML/CSS frontend integrated with Python backend.
+### Features
 
-### 📦 Production-Ready Deployment
-- Fully standalone `.exe` file built using **PyInstaller**.
-- Professional Windows installer built using **Inno Setup**.
+- Google OAuth 2.0 Authentication
+- Bulk Google Drive Downloads
+- Multi-threaded Download Engine
+- Automatic Retry Mechanism
+- Progress Tracking
+- ZIP Packaging
+- Automatic File Naming
+- Google Docs Export Support
+- Parallel Downloads
+- Download Cancellation
 
 ---
 
-## Why This Project Matters
+## 📄 Offline PDF Merger
 
-| Problem | Solution |
-|--------|----------|
-| Manual downloads take days | Automated parallel Drive downloader |
-| Online mergers have limits | Unlimited offline PDF merging |
-| Sensitive data risk | Fully offline operation |
-| Team workload wasted | Frees team to focus on validation instead of downloading |
+A completely offline PDF processing utility.
+
+### Features
+
+- Unlimited PDF Merge
+- Password Detection
+- Skip Encrypted PDFs
+- Progress Reporting
+- Local Processing
+- No Upload Limits
+- No Internet Required
 
 ---
 
-## Architecture & Tech Stack
+# 📈 Impact
 
-### Core Technologies
-| Component | Technology |
-|----------|------------|
-| Backend | Python 3.9+ |
-| GUI | PySide6, QtWebEngine |
-| PDF Processing | pikepdf |
-| Google Drive API | google-auth, googleapiclient |
-| Config & Paths | appdirs, config.py |
+The application significantly reduced manual effort during placement documentation.
+
+| Before | After |
+|---------|--------|
+| Manual download of 1500+ files | Automated bulk download |
+| Several hours of repetitive work | Completed in minutes |
+| Online PDF merger limitations | Unlimited offline merging |
+| Sensitive documents uploaded online | Entire workflow remains local |
+
+---
+
+# 🏗 Architecture
+
+```
+                        NBA Utilities
+
+                     Desktop Launcher
+                           │
+          ┌────────────────┴────────────────┐
+          │                                 │
+          ▼                                 ▼
+  Google Drive Downloader             PDF Merger
+          │                                 │
+          ▼                                 ▼
+     Qt WebChannel                    Qt WebChannel
+          │                                 │
+          ▼                                 ▼
+      Python Backend                  Python Backend
+          │                                 │
+          ▼                                 ▼
+ Google Drive API                    PikePDF Engine
+```
+
+---
+
+# ⚙ Workflow
+
+## Google Drive Downloader
+
+```
+Excel / CSV
+
+        │
+
+        ▼
+
+Read using Pandas
+
+        │
+
+        ▼
+
+Extract Drive Links
+
+        │
+
+        ▼
+
+Authenticate with Google
+
+        │
+
+        ▼
+
+Multi-threaded Download
+
+        │
+
+        ▼
+
+ZIP Generation
+
+        │
+
+        ▼
+
+Downloads Folder
+```
+
+---
+
+## PDF Merger
+
+```
+User Uploads PDFs
+
+        │
+
+        ▼
+
+Encryption Detection
+
+        │
+
+        ▼
+
+Worker Thread
+
+        │
+
+        ▼
+
+Merge Engine
+
+        │
+
+        ▼
+
+Save to Downloads
+```
+
+---
+
+# 🛠 Technology Stack
+
+| Category | Technologies |
+|------------|----------------|
+| Programming Language | Python 3 |
+| Desktop Framework | PySide6 |
+| Web UI | HTML, CSS, JavaScript |
+| Embedded Browser | Qt WebEngine |
+| Communication Layer | Qt WebChannel |
+| Spreadsheet Processing | Pandas |
+| Google Integration | Google Drive API |
+| Authentication | OAuth 2.0 |
+| PDF Processing | PikePDF |
 | Packaging | PyInstaller |
 | Installer | Inno Setup |
 
 ---
 
-## Application Modules
+# 📂 Project Structure
 
-### `home.py`
-- Main launcher and UI handler.
-- Manages subprocesses for GLink.exe and Merger.exe.
-- Centralized logging and error handling.
-
-### `Glink.py`
-- Google OAuth 2.0 authentication.
-- Extracts file URLs from Google Sheets.
-- Multi-threaded high-speed PDF downloading.
-
-### `merger.py`
-- Merges thousands of PDFs using pikepdf.
-- Worker threads for smooth UI experience.
-- Skips encrypted PDFs and writes logs.
-
-### `config.py`
-- Handles app directory paths using `appdirs`.
-- Detects PyInstaller runtime (`sys._MEIPASS`).
-
-### `installer.iss`
-- Complete Inno Setup configuration for generating Windows installer.
-
----
-
-## Folder Structure
-```arduino
+```
 NBA_Utilities/
+
+├── src/
 │
 ├── home.py
-├── Glink.py
+├── glink.py
 ├── merger.py
 ├── config.py
+│
+├── ui/
+│   ├── nba-drive-downloader.html
+│   ├── nba-pdf-merger.html
+│   └── nba-utilities-home.html
+│
+├── assets/
+│   └── icon.ico
+│
 ├── build.py
-├── nba-drive-downloader.html
-├── nba-pdf-merger.html
-├── nba-utilities-home.html
-├── credentials.json
-├── icon.ico  
 ├── installer.iss
 ├── build_nba_utilities.spec
-├── requirements.txt 
+├── requirements.txt
 └── README.md
 ```
 
-## Installation (Developer Guide)
+---
 
-### 1. Clone the Repository
+# 🚀 Installation
+
 ```bash
-git clone https://github.com/YourUsername/NBA-Utilities.git
+git clone https://github.com/mukeshkannanpk/NBA_Utilities.git
+
 cd NBA_Utilities
-```
-### 2. Create & Activate Virtual Environment
-```bash
-python -m venv .venv
-# Activate manually depending on OS
-```
 
-### 3. Install Dependencies
-```bash
+python -m venv .venv
+
 pip install -r requirements.txt
 ```
 
-### 4. Add Google API Credentials
-Place your credentials.json in the /resources/ folder.
+Add your Google OAuth `credentials.json` before running the Google Drive Downloader.
 
-## Building EXE & Installer
-### 1. Run the Build Script
+---
+
+# 🔨 Build
+
 ```bash
 python build.py
 ```
 
-This generates:
+The automated build process:
 
-- All .exe files
+- Verifies dependencies
+- Builds executables using PyInstaller
+- Creates installer-ready directory structure
+- Generates deployment package
 
-- NBA_Utilities_Package/ directory
+---
 
-### 2. Build Installer via Inno Setup
+# 🧠 Technical Highlights
 
-- Open Inno Setup Compiler
+- Multi-threaded download engine using `QThread` and `ThreadPoolExecutor`
+- OAuth 2.0 token refresh
+- JavaScript ↔ Python communication using Qt WebChannel
+- Cross-platform path management
+- Production logging
+- Automatic retry strategy
+- Rate limiting for Google Drive API
+- Temporary file management
+- Standalone executable packaging
 
-- Load installer/installer.iss
+---
 
-- Compile
+# 📄 License
 
-### Output:
+Released under the MIT License.
 
-Installer/NBA_Utilities_Setup_vX.X.X.exe
+---
 
-## License
+## 👨‍💻 Author
 
-- This project is licensed under the MIT License.
-- See the LICENSE file for details.
+**Mukesh kannan P K**
+
+Designed, developed, tested, packaged and deployed as an end-to-end automation solution during internship at the **Training and Placement Cell, Bannari Amman Institute of Technology**.
