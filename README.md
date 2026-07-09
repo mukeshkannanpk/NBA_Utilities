@@ -285,12 +285,6 @@ The automated build process:
 
 ---
 
-# 📄 License
-
-Released under the MIT License.
-
----
-
 ## 👨‍💻 Author
 
 **Mukesh kannan P K**
